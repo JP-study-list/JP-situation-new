@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日文情境入口</title>
+<link rel="manifest" href="/JP-situations/manifest.json">
+<link rel="icon" type="image/png" href="/JP-situations/icon-192.png">
+<link rel="apple-touch-icon" href="/JP-situations/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="日文情境">
+<meta name="theme-color" content="#1f3a5f">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f5f3; --surface: #fff; --border: #e0e0e0;
+    --text: #1a1a1a; --text2: #666; --text3: #999;
+    --gold: #b8860b; --section: #888;
+    --heat0: #ebebe8; --heat1: #c6e48b; --heat2: #7bc96f; --heat3: #239a3b; --heat4: #196127;
+  }
+  body.dark {
+    --bg: #111110; --surface: #1c1c1a; --border: #2e2e2b;
+    --text: #f0ede8; --text2: #a8a69e; --text3: #777;
+    --gold: #d4a94e; --section: #aaa;
+    --heat0: #22221f; --heat1: #0e4429; --heat2: #006d32; --heat3: #26a641; --heat4: #39d353;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh;
+    transition: background .2s, color .2s;
+  }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 264px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px 30px;
+    transition: margin-left .25s ease;
+    position: sticky; top: 0; height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar.collapsed { margin-left: -264px; }
+
+  .sidebar-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .sidebar-title {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+    color: var(--section);
+  }
+  .sidebar-close {
+    width: 28px; height: 28px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sidebar-close:hover { border-color: var(--gold); color: var(--text); }
+  .sidebar-close svg { display: block; }
+
+  .side-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .side-block-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--section); margin-bottom: 10px;
+  }
+
+  /* heatmap */
+  .heat-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .heat-month { font-size: 13px; font-weight: 600; }
+  .heat-nav {
+    width: 24px; height: 24px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text2); cursor: pointer; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+  }
+  .heat-nav:hover { border-color: var(--gold); color: var(--text); }
+  .heat-nav:disabled { opacity: .3; cursor: default; }
+  .heat-nav:disabled:hover { border-color: var(--border); color: var(--text2); }
+
+  .heat-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 4px; margin-bottom: 4px;
+  }
+  .heat-weekdays span {
+    font-size: 9px; color: var(--text3); text-align: center;
+  }
+  .heat-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  }
+  .heat-cell {
+    aspect-ratio: 1; border-radius: 4px;
+    background: var(--heat0);
+    position: relative;
+  }
+  .heat-cell.empty { background: transparent; }
+  .heat-cell.l1 { background: var(--heat1); }
+  .heat-cell.l2 { background: var(--heat2); }
+  .heat-cell.l3 { background: var(--heat3); }
+  .heat-cell.l4 { background: var(--heat4); }
+  .heat-cell.today { outline: 1.5px solid var(--gold); outline-offset: 1px; }
+  .heat-cell:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--bg);
+    font-size: 10px; padding: 3px 7px; border-radius: 5px;
+    white-space: nowrap; z-index: 10; pointer-events: none;
+  }
+
+  /* stats */
+  .stat-row { display: flex; gap: 8px; }
+  .stat-box {
+    flex: 1; text-align: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 4px;
+  }
+  .stat-num { font-size: 20px; font-weight: 700; color: var(--gold); }
+  .stat-label { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+  /* recent / least list */
+  .mini-list { display: flex; flex-direction: column; gap: 6px; }
+  .mini-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .mini-item:hover { border-color: var(--gold); }
+  .mini-item-title { font-size: 13px; font-weight: 500; }
+  .mini-item-meta { font-size: 10px; color: var(--text3); }
+  .mini-empty { font-size: 11px; color: var(--text3); }
+
+  /* ---------- 收藏 Modal ---------- */
+  .sidebar-toggle { display: flex; gap: 8px; }
+  #favBtn { position: relative; }
+  .fav-badge {
+    position: absolute; top: -3px; right: -3px;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    border-radius: 999px;
+    background: var(--gold); color: var(--surface);
+    font-size: 9px; font-weight: 700; line-height: 16px;
+    text-align: center;
+  }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,.45);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    width: 100%; max-width: 520px;
+    max-height: 86vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title { font-size: 15px; font-weight: 700; }
+  .modal-close {
+    width: 30px; height: 30px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { border-color: var(--gold); color: var(--text); }
+
+  .modal-tabs { display: flex; gap: 6px; padding: 12px 18px 0; }
+  .modal-tab {
+    flex: 1; padding: 8px 4px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text2); font-size: 12px; cursor: pointer;
+    font-family: inherit;
+  }
+  .modal-tab:hover { border-color: var(--gold); color: var(--text); }
+  .modal-tab.active { background: var(--gold); border-color: var(--gold); color: var(--surface); font-weight: 600; }
+
+  .modal-body { padding: 14px 18px; overflow-y: auto; flex: 1; }
+  .modal-foot {
+    padding: 10px 18px 14px;
+    border-top: 1px solid var(--border);
+    text-align: right;
+  }
+
+  .fav-pane { display: none; }
+  .fav-pane.active { display: block; }
+
+  .fav-list { display: flex; flex-direction: column; gap: 8px; }
+  .fav-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 11px; padding: 12px 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .fav-item-main { flex: 1; min-width: 0; cursor: pointer; }
+  .fav-item-jp { font-size: 14px; font-weight: 500; line-height: 1.5; }
+  .fav-item-kana { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .fav-item-zh { font-size: 12px; color: var(--text2); margin-top: 3px; line-height: 1.5; }
+  .fav-item-src { font-size: 10px; color: var(--text3); margin-top: 5px; }
+  .fav-item-acts { display: flex; gap: 6px; flex-shrink: 0; }
+  .fav-act {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fav-act:hover { border-color: var(--gold); color: var(--text); }
+  .fav-act.playing { background: var(--gold); border-color: var(--gold); color: var(--surface); }
+  .fav-act.remove:hover { border-color: #b3474a; color: #b3474a; }
+  .fav-count { font-size: 11px; color: var(--text3); }
+  .mini-empty { font-size: 12px; color: var(--text3); }
+
+  /* 收藏測驗 */
+  .fq-empty {
+    border: 1px dashed var(--border); border-radius: 12px;
+    padding: 34px 22px; text-align: center;
+    color: var(--text2); font-size: 13px; line-height: 1.7;
+  }
+  .fq-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; gap: 10px;
+  }
+  .fq-progress { font-size: 11px; color: var(--text3); }
+  .fq-dir-btn {
+    padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--gold); background: transparent;
+    color: var(--gold); font-size: 11px; font-weight: 600;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+  }
+  .fq-dir-btn:hover { background: var(--gold); color: var(--surface); }
+
+  .fq-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 13px; padding: 26px 20px;
+    text-align: center; margin-bottom: 14px;
+  }
+  .fq-label { font-size: 11px; color: var(--text3); margin-bottom: 12px; }
+  .fq-jp { font-size: 24px; font-weight: 700; line-height: 1.35; }
+  .fq-kana { font-size: 12px; color: var(--text2); margin-top: 5px; }
+  .fq-src { font-size: 10px; color: var(--text3); margin-top: 10px; }
+
+  .fq-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fq-option {
+    padding: 13px 10px; border-radius: 11px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); font-size: 13px; cursor: pointer;
+    font-family: inherit; line-height: 1.4;
+  }
+  .fq-option:hover:not(:disabled) { border-color: var(--gold); }
+  .fq-option:disabled { cursor: default; }
+  .fq-option.correct { background: #DCEADD; border-color: #4E7D54; color: #294A2D; }
+  .fq-option.wrong { background: #F1DCDC; border-color: #97393B; color: #6B2829; }
+
+  .fq-feedback {
+    text-align: center; margin-top: 12px;
+    font-size: 12px; color: var(--text2); min-height: 16px;
+  }
+  .fq-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px;
+  }
+  .fq-score { font-size: 12px; color: var(--text2); }
+  .fq-score strong { color: var(--gold); }
+  .fq-next, .fq-restart {
+    padding: 8px 20px; border-radius: 999px;
+    border: 1px solid var(--gold); background: var(--gold);
+    color: var(--surface); font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .fq-next:disabled { opacity: .35; cursor: default; }
+  .fq-result { padding: 40px 22px; }
+  .fq-big { font-size: 38px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+  .fq-msg { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
+
+  @media (max-width: 520px) {
+    .fq-options { grid-template-columns: 1fr; }
+    .modal { max-height: 92vh; }
+  }
+
+  /* random button */
+  .random-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    font-family: inherit;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .random-btn:hover { background: var(--gold); color: var(--surface); }
+
+  /* sync */
+  .sync-status {
+    font-size: 11px; color: var(--text3);
+    margin-bottom: 8px; line-height: 1.5;
+    word-break: break-all;
+  }
+  .sync-status strong { color: var(--text); }
+  .sync-status .ok { color: var(--heat3); font-weight: 600; }
+  .sync-status .off { color: var(--text3); }
+  .sync-code-row { display: flex; gap: 6px; }
+  .sync-input {
+    flex: 1; min-width: 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    font-family: inherit; font-size: 12px;
+  }
+  .sync-input:focus { outline: none; border-color: var(--gold); }
+  .sync-btn {
+    padding: 8px 12px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2);
+    font-family: inherit; font-size: 12px; cursor: pointer;
+    white-space: nowrap;
+  }
+  .sync-btn:hover { border-color: var(--gold); color: var(--text); }
+  .sync-hint { font-size: 10px; color: var(--text3); margin-top: 8px; line-height: 1.6; }
+
+  /* ---------- Main ---------- */
+  .main-area { flex: 1; padding: 40px 20px 60px; min-width: 0; }
+  .container { max-width: 760px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 36px; position: relative; }
+  header h1 { font-weight: 700; font-size: clamp(28px, 6vw, 42px); letter-spacing: 0.02em; }
+  header p { margin-top: 10px; color: var(--text2); font-size: 13px; }
+
+  .section { margin-bottom: 32px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    color: var(--section);
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .card {
+    display: block; text-decoration: none; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px; transition: transform .15s, border-color .15s;
+    cursor: pointer;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--gold); }
+  .card-title { font-weight: 600; font-size: 18px; margin-bottom: 6px; }
+  .card-sub { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--text3); }
+
+  .toolbar { position: absolute; top: 0; right: 0; display: flex; gap: 8px; align-items: center; }
+  .tool-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, color .15s;
+  }
+  .tool-btn:hover { border-color: var(--gold); color: var(--text); }
+  .tool-btn svg { display: block; }
+
+  .sidebar-toggle {
+    position: absolute; top: 0; left: 0;
+  }
+
+  .grid.list-mode { grid-template-columns: 1fr; gap: 6px; }
+  .grid.list-mode .card { display: flex; align-items: center; gap: 14px; padding: 12px 18px; }
+  .grid.list-mode .card-title { font-size: 15px; margin-bottom: 0; flex-shrink: 0; min-width: 110px; }
+  .grid.list-mode .card-sub { font-size: 12px; color: var(--text2); }
+
+  @media (max-width: 720px) {
+    .sidebar {
+      position: fixed; z-index: 50; left: 0; top: 0;
+      box-shadow: 4px 0 20px rgba(0,0,0,.15);
+    }
+    .sidebar.collapsed { margin-left: -280px; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar collapsed" id="sidebar">
+    <div class="sidebar-head">
+      <span class="sidebar-title">學習紀錄</span>
+      <button class="sidebar-close" onclick="toggleSidebar()" title="收合" aria-label="收合側欄">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="side-block">
+      <div class="heat-head">
+        <button class="heat-nav" id="heatPrev" title="上個月">‹</button>
+        <span class="heat-month" id="heatMonth"></span>
+        <button class="heat-nav" id="heatNext" title="下個月">›</button>
+      </div>
+      <div class="heat-weekdays">
+        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="heat-grid" id="heatGrid"></div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">統計</div>
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-num" id="statStreak">0</div>
+          <div class="stat-label">連續天數</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">累積天數</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">最近學過</div>
+      <div class="mini-list" id="recentList"><span class="mini-empty">尚無紀錄</span></div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">隨機學習</div>
+      <button class="random-btn" id="randomBtn">隨機挑一個情境</button>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">最少複習</div>
+      <div class="mini-list" id="leastList"></div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-block-label">跨裝置同步</div>
+      <div class="sync-status" id="syncStatus"></div>
+      <div class="sync-code-row">
+        <input class="sync-input" id="syncInput" placeholder="設定同步碼（6字以上）" maxlength="30">
+        <button class="sync-btn" id="syncApply">啟用</button>
+      </div>
+      <div class="sync-hint">設定同步碼後，紀錄才會上傳雲端。在另一台裝置輸入相同同步碼即可同步。請記下你的同步碼。</div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <div class="main-area">
+    <div class="container">
+      <header>
+        <div class="sidebar-toggle">
+          <button class="tool-btn" id="sidebarBtn" title="學習紀錄" onclick="toggleSidebar()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="favBtn" title="收藏">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>
+            </svg>
+            <span class="fav-badge" id="favBadge" style="display:none">0</span>
+          </button>
+        </div>
+        <div class="toolbar">
+          <button class="tool-btn" id="layout-btn" onclick="toggleLayout()" title="切換顯示模式">
+            <svg id="icon-list" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+            <svg id="icon-grid" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="theme-btn" onclick="toggleTheme()" title="切換深色模式">
+            <svg id="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg id="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+        </div>
+        <h1>日文情境入口</h1>
+        <p>點選卡片，前往對應的情境學習工具</p>
+      </header>
+
+      <div class="section">
+        <div class="section-label">飲食</div>
+        <div class="grid">
+          <a class="card" href="./izakaya.html">
+            <div class="card-title">居酒屋</div>
+            <div class="card-sub">點餐、乾杯、結帳用語</div>
+          </a>
+          <a class="card" href="./italian.html">
+            <div class="card-title">義大利餐廳</div>
+            <div class="card-sub">正式用餐、點菜、詢問料理</div>
+          </a>
+          <a class="card" href="./ramen.html">
+            <div class="card-title">拉麵店</div>
+            <div class="card-sub">湯頭、配料、客製化點法</div>
+          </a>
+          <a class="card" href="./gyudon.html">
+            <div class="card-title">牛丼</div>
+            <div class="card-sub">快餐店點餐與常見選項</div>
+          </a>
+          <a class="card" href="./sushi.html">
+            <div class="card-title">高級壽司店</div>
+            <div class="card-sub">師傅前板前用語與禮儀</div>
+          </a>
+          <a class="card" href="./yakiniku.html">
+            <div class="card-title">燒肉店</div>
+            <div class="card-sub">烤肉點餐、部位、套餐用語</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">買い物</div>
+        <div class="grid">
+          <a class="card" href="./butcher.html">
+            <div class="card-title">肉舖</div>
+            <div class="card-sub">詢問部位、份量、熟度</div>
+          </a>
+          <a class="card" href="./pharmacy.html">
+            <div class="card-title">藥局</div>
+            <div class="card-sub">症狀描述、購藥與確認用藥</div>
+          </a>
+          <a class="card" href="./konbini.html">
+            <div class="card-title">日本超商</div>
+            <div class="card-sub">結帳、加熱、服務台常用語</div>
+          </a>
+          <a class="card" href="./bakery.html">
+            <div class="card-title">麵包店</div>
+            <div class="card-sub">點選麵包、包裝、詢問口味</div>
+          </a>
+          <a class="card" href="./starbucks.html">
+            <div class="card-title">星巴克</div>
+            <div class="card-sub">客製化點飲料與尺寸選擇</div>
+          </a>
+          <a class="card" href="./pokemon-card.html">
+            <div class="card-title">寶可夢卡店</div>
+            <div class="card-sub">詢問卡牌、交易、稀有度用語</div>
+          </a>
+          <a class="card" href="./greengrocer.html">
+            <div class="card-title">蔬菜店</div>
+            <div class="card-sub">詢問產地、份量、新鮮度</div>
+          </a>
+          <a class="card" href="./clothing.html">
+            <div class="card-title">服飾／試穿</div>
+            <div class="card-sub">試穿、尺寸、顏色詢問用語</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">旅行</div>
+        <div class="grid">
+          <a class="card" href="./hotel.html">
+            <div class="card-title">商務飯店</div>
+            <div class="card-sub">入住、退房、設施詢問</div>
+          </a>
+          <a class="card" href="./reservation.html">
+            <div class="card-title">電話訂位</div>
+            <div class="card-sub">餐廳電話預約常用句型</div>
+          </a>
+          <a class="card" href="./shrine.html">
+            <div class="card-title">神社</div>
+            <div class="card-sub">參拜流程、御守、御朱印用語</div>
+          </a>
+          <a class="card" href="./museum.html">
+            <div class="card-title">美術館</div>
+            <div class="card-sub">購票、導覽、作品詢問用語</div>
+          </a>
+          <a class="card" href="./onsen.html">
+            <div class="card-title">溫泉／錢湯</div>
+            <div class="card-sub">入浴禮儀、設施、注意事項</div>
+          </a>
+          <a class="card" href="./directions.html">
+            <div class="card-title">問路</div>
+            <div class="card-sub">問路、方向、交通指引用語</div>
+          </a>
+          <a class="card" href="./taxi.html">
+            <div class="card-title">計程車</div>
+            <div class="card-sub">叫車、目的地、車資確認</div>
+          </a>
+          <a class="card" href="./car-rental.html">
+            <div class="card-title">租車</div>
+            <div class="card-sub">租車手續、保險、還車確認</div>
+          </a>
+          <a class="card" href="./post-office.html">
+            <div class="card-title">郵局</div>
+            <div class="card-sub">寄件、郵資、包裹寄送用語</div>
+          </a>
+        </div>
+      </div>
+
+      <footer>持續更新中</footer>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 收藏 MODAL ========== -->
+<div class="modal-backdrop" id="favModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="收藏">
+    <div class="modal-head">
+      <span class="modal-title">收藏</span>
+      <button class="modal-close" id="favClose" aria-label="關閉">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-tabs" id="favTabs">
+      <button class="modal-tab active" data-favtab="word">單字</button>
+      <button class="modal-tab" data-favtab="phrase">例句</button>
+      <button class="modal-tab" data-favtab="quiz">測驗</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- 單字 / 例句清單 -->
+      <div class="fav-pane active" id="favPaneList">
+        <div class="fav-list" id="favList"></div>
+      </div>
+
+      <!-- 測驗 -->
+      <div class="fav-pane" id="favPaneQuiz">
+        <div class="fq-empty" id="fqEmpty" style="display:none;"></div>
+
+        <div id="fqBody">
+          <div class="fq-toolbar">
+            <span class="fq-progress" id="fqProgress">第 1 題 / 共 0 題</span>
+            <button class="fq-dir-btn" id="fqDirBtn" type="button">切換為「中→日」</button>
+          </div>
+
+          <div id="fqContent">
+            <div class="fq-panel">
+              <div class="fq-label" id="fqLabel">這個單字的中文意思是？</div>
+              <div class="fq-jp" id="fqJp"></div>
+              <div class="fq-kana" id="fqKana"></div>
+              <div class="fq-src" id="fqSrc"></div>
+            </div>
+            <div class="fq-options" id="fqOptions"></div>
+            <div class="fq-feedback" id="fqFeedback"></div>
+            <div class="fq-footer">
+              <span class="fq-score">得分 <strong id="fqScore">0 / 0</strong></span>
+              <button class="fq-next" id="fqNext" disabled>下一題</button>
+            </div>
+          </div>
+
+          <div id="fqResult" style="display:none;">
+            <div class="fq-panel fq-result">
+              <div class="fq-big" id="fqFinal">0 / 0</div>
+              <div class="fq-msg" id="fqMsg"></div>
+              <button class="fq-restart" id="fqRestart">再測一次</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <span class="fav-count" id="favCount"></span>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ================= Firebase ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBB0uniuOE0OFG_xj9Ld8eM64PpNO2M3Vk",
+  authDomain: "jpsituations.firebaseapp.com",
+  projectId: "jpsituations",
+  storageBucket: "jpsituations.firebasestorage.app",
+  messagingSenderId: "52165806961",
+  appId: "1:52165806961:web:59fc91bb40645eb37844d0"
+};
+
+let db = null;
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+} catch (e) {
+  console.warn("Firebase 初始化失敗，改用本機模式", e);
+}
+
+/* ================= 情境清單 ================= */
+const PAGES = [
+  { file: "izakaya.html", title: "居酒屋" },
+  { file: "italian.html", title: "義大利餐廳" },
+  { file: "ramen.html", title: "拉麵店" },
+  { file: "gyudon.html", title: "牛丼" },
+  { file: "sushi.html", title: "高級壽司店" },
+  { file: "yakiniku.html", title: "燒肉店" },
+  { file: "butcher.html", title: "肉舖" },
+  { file: "pharmacy.html", title: "藥局" },
+  { file: "konbini.html", title: "日本超商" },
+  { file: "bakery.html", title: "麵包店" },
+  { file: "starbucks.html", title: "星巴克" },
+  { file: "pokemon-card.html", title: "寶可夢卡店" },
+  { file: "greengrocer.html", title: "蔬菜店" },
+  { file: "clothing.html", title: "服飾／試穿" },
+  { file: "hotel.html", title: "商務飯店" },
+  { file: "reservation.html", title: "電話訂位" },
+  { file: "shrine.html", title: "神社" },
+  { file: "museum.html", title: "美術館" },
+  { file: "onsen.html", title: "溫泉／錢湯" },
+  { file: "directions.html", title: "問路" },
+  { file: "taxi.html", title: "計程車" },
+  { file: "car-rental.html", title: "租車" },
+  { file: "post-office.html", title: "郵局" },
+];
+const titleOf = f => (PAGES.find(p => p.file === f) || {}).title || f;
+
+/* ================= 資料 ================= */
+const LS_DAYS = "jp-hub-days";       // { "2026-07-08": 次數 }
+const LS_VISITS = "jp-hub-visits";   // { "ramen.html": 次數 }
+const LS_RECENT = "jp-hub-recent";   // [ "ramen.html", ... ] 最新在前
+const LS_FAVS = "jp-hub-favs";       // { "hotel.html::word::チェックイン": {...} }
+const LS_CODE = "jp-hub-synccode";
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function loadJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+}
+
+let days = loadJSON(LS_DAYS, {});
+let visits = loadJSON(LS_VISITS, {});
+let recent = loadJSON(LS_RECENT, []);
+let favs = loadJSON(LS_FAVS, {});
+let syncCode = localStorage.getItem(LS_CODE) || null;  // 未設定＝純本機，不自動產生
+let cloudOk = false;
+
+function saveLocal() {
+  localStorage.setItem(LS_DAYS, JSON.stringify(days));
+  localStorage.setItem(LS_VISITS, JSON.stringify(visits));
+  localStorage.setItem(LS_RECENT, JSON.stringify(recent));
+  localStorage.setItem(LS_FAVS, JSON.stringify(favs));
+}
+
+function mergeCount(a, b) {
+  const out = { ...a };
+  for (const k in b) out[k] = Math.max(out[k] || 0, b[k]);
+  return out;
+}
+function mergeRecent(local, remote) {
+  const out = [];
+  for (const f of [...local, ...remote]) {
+    if (!out.includes(f)) out.push(f);
+    if (out.length >= 3) break;
+  }
+  return out;
+}
+
+function mergeFavs(local, remote) {
+  const out = { ...remote };
+  for (const k in local) {
+    if (!out[k] || (local[k].ts || 0) > (out[k].ts || 0)) out[k] = local[k];
+  }
+  return out;
+}
+
+async function pullCloud() {
+  if (!db || !syncCode) return;
+  try {
+    const snap = await getDoc(doc(db, "learners", syncCode));
+    if (snap.exists()) {
+      const d = snap.data();
+      days = mergeCount(days, d.days || {});
+      visits = mergeCount(visits, d.visits || {});
+      recent = mergeRecent(recent, d.recent || []);
+      favs = mergeFavs(favs, d.favs || {});
+      saveLocal();
+    }
+    cloudOk = true;
+  } catch (e) {
+    console.warn("雲端讀取失敗", e);
+    cloudOk = false;
+  }
+  renderAll();
+}
+
+async function pushCloud() {
+  if (!db || !syncCode) return;
+  try {
+    await setDoc(doc(db, "learners", syncCode), {
+      days, visits, recent, favs,
+      updated: new Date().toISOString()
+    }, { merge: true });
+    cloudOk = true;
+  } catch (e) {
+    console.warn("雲端寫入失敗", e);
+    cloudOk = false;
+  }
+  renderSyncStatus();
+}
+
+function recordVisit(file) {
+  const t = todayStr();
+  days[t] = (days[t] || 0) + 1;
+  visits[file] = (visits[file] || 0) + 1;
+  recent = [file, ...recent.filter(f => f !== file)].slice(0, 3);
+  saveLocal();
+  renderAll();
+  pushCloud();
+}
+
+function goTo(file) {
+  recordVisit(file);
+  setTimeout(() => { location.href = "./" + file; }, 200);
+}
+window.hubGoTo = goTo;
+
+/* ================= 熱圖（單月 + 前後箭頭） ================= */
+const now = new Date();
+let viewYear = now.getFullYear();
+let viewMonth = now.getMonth();
+
+function levelOf(count) {
+  if (!count) return 0;
+  if (count === 1) return 1;
+  if (count === 2) return 2;
+  if (count <= 4) return 3;
+  return 4;
+}
+
+function renderHeatmap() {
+  document.getElementById("heatMonth").textContent = `${viewYear} 年 ${viewMonth + 1} 月`;
+  const grid = document.getElementById("heatGrid");
+  grid.innerHTML = "";
+
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const t = todayStr();
+
+  for (let i = 0; i < firstDow; i++) {
+    const c = document.createElement("div");
+    c.className = "heat-cell empty";
+    grid.appendChild(c);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const count = days[key] || 0;
+    const cell = document.createElement("div");
+    cell.className = "heat-cell" + (levelOf(count) ? " l" + levelOf(count) : "");
+    if (key === t) cell.classList.add("today");
+    cell.dataset.tip = count ? `${viewMonth+1}/${d}・學習 ${count} 次` : `${viewMonth+1}/${d}・無紀錄`;
+    grid.appendChild(cell);
+  }
+
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+  document.getElementById("heatNext").disabled = isCurrentMonth;
+}
+
+document.getElementById("heatPrev").addEventListener("click", () => {
+  viewMonth--;
+  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  renderHeatmap();
+});
+document.getElementById("heatNext").addEventListener("click", () => {
+  viewMonth++;
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  renderHeatmap();
+});
+
+/* ================= 統計 ================= */
+function renderStats() {
+  const total = Object.keys(days).filter(k => days[k] > 0).length;
+  let streak = 0;
+  const d = new Date();
+  if (!days[todayStr()]) d.setDate(d.getDate() - 1);
+  while (true) {
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    if (days[key] > 0) { streak++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  document.getElementById("statStreak").textContent = streak;
+  document.getElementById("statTotal").textContent = total;
+}
+
+/* ================= 最近學過 ================= */
+function renderRecent() {
+  const wrap = document.getElementById("recentList");
+  if (!recent.length) {
+    wrap.innerHTML = '<span class="mini-empty">尚無紀錄</span>';
+    return;
+  }
+  wrap.innerHTML = "";
+  recent.forEach(file => {
+    const el = document.createElement("div");
+    el.className = "mini-item";
+    el.innerHTML = `<span class="mini-item-title">${titleOf(file)}</span><span class="mini-item-meta">繼續</span>`;
+    el.addEventListener("click", () => goTo(file));
+    wrap.appendChild(el);
+  });
+}
+
+/* ================= 最少複習 ================= */
+function renderLeast() {
+  const wrap = document.getElementById("leastList");
+  const sorted = [...PAGES].sort((a, b) => (visits[a.file] || 0) - (visits[b.file] || 0)).slice(0, 3);
+  wrap.innerHTML = "";
+  sorted.forEach(p => {
+    const n = visits[p.file] || 0;
+    const el = document.createElement("div");
+    el.className = "mini-item";
+    el.innerHTML = `<span class="mini-item-title">${p.title}</span><span class="mini-item-meta">${n} 次</span>`;
+    el.addEventListener("click", () => goTo(p.file));
+    wrap.appendChild(el);
+  });
+}
+
+/* ================= 收藏 Modal ================= */
+let favTab = "word";
+
+const ICON_SPEAK = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg>';
+const ICON_TRASH = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>';
+
+/* ---- 發音 ---- */
+let jaVoices = null;
+function getJaVoices() {
+  if (!("speechSynthesis" in window)) return [];
+  if (jaVoices && jaVoices.length) return jaVoices;
+  jaVoices = window.speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith("ja"));
+  return jaVoices;
+}
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.onvoiceschanged = () => { jaVoices = null; };
+}
+function speakJa(text, btn) {
+  if (!("speechSynthesis" in window)) { alert("您的瀏覽器不支援語音播放功能"); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "ja-JP";
+  const vs = getJaVoices();
+  if (vs.length) u.voice = vs[0];
+  u.pitch = 1.0; u.rate = 0.9;
+  document.querySelectorAll(".fav-act.playing").forEach(b => b.classList.remove("playing"));
+  if (btn) btn.classList.add("playing");
+  const clear = () => { if (btn) btn.classList.remove("playing"); };
+  u.onend = clear; u.onerror = clear;
+  window.speechSynthesis.speak(u);
+}
+
+/* ---- 開關 ---- */
+function openFavModal() {
+  document.getElementById("favModal").hidden = false;
+  document.body.style.overflow = "hidden";
+  renderFavs();
+}
+function closeFavModal() {
+  document.getElementById("favModal").hidden = true;
+  document.body.style.overflow = "";
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+document.getElementById("favBtn").addEventListener("click", openFavModal);
+document.getElementById("favClose").addEventListener("click", closeFavModal);
+document.getElementById("favModal").addEventListener("click", (e) => {
+  if (e.target.id === "favModal") closeFavModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("favModal").hidden) closeFavModal();
+});
+
+/* ---- 分頁 ---- */
+document.querySelectorAll(".modal-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".modal-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    favTab = btn.dataset.favtab;
+    const isQuiz = favTab === "quiz";
+    document.getElementById("favPaneList").classList.toggle("active", !isQuiz);
+    document.getElementById("favPaneQuiz").classList.toggle("active", isQuiz);
+    if (isQuiz) initFavQuiz();
+    else renderFavs();
+  });
+});
+
+/* ---- 計數與徽章 ---- */
+function favEntries(type) {
+  return Object.entries(favs)
+    .filter(([, v]) => v && v.type === type)
+    .sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0));
+}
+
+function renderFavBadge() {
+  const n = Object.keys(favs).length;
+  const badge = document.getElementById("favBadge");
+  badge.textContent = n > 99 ? "99+" : n;
+  badge.style.display = n ? "block" : "none";
+}
+
+function renderFavCount() {
+  document.getElementById("favCount").textContent =
+    `單字 ${favEntries("word").length}・例句 ${favEntries("phrase").length}`;
+}
+
+/* ---- 清單 ---- */
+function removeFav(key) {
+  delete favs[key];
+  saveLocal();
+  pushCloud();
+  renderFavs();
+  renderFavBadge();
+}
+
+function renderFavs() {
+  renderFavCount();
+  renderFavBadge();
+  if (favTab === "quiz") return;
+
+  const wrap = document.getElementById("favList");
+  const entries = favEntries(favTab);
+
+  if (!entries.length) {
+    wrap.innerHTML = `<span class="mini-empty">尚無收藏的${favTab === "word" ? "單字" : "例句"}。在情境頁點擊星號即可加入。</span>`;
+    return;
+  }
+
+  wrap.innerHTML = "";
+  entries.forEach(([key, v]) => {
+    const el = document.createElement("div");
+    el.className = "fav-item";
+
+    const main = document.createElement("div");
+    main.className = "fav-item-main";
+    main.innerHTML =
+      `<div class="fav-item-jp">${v.jp || ""}</div>` +
+      (v.kana ? `<div class="fav-item-kana">${v.kana}</div>` : "") +
+      `<div class="fav-item-zh">${v.zh || ""}</div>` +
+      `<div class="fav-item-src">${titleOf(v.page)}${v.cat ? "・" + v.cat : ""}</div>`;
+    main.addEventListener("click", () => { closeFavModal(); goTo(v.page); });
+
+    const acts = document.createElement("div");
+    acts.className = "fav-item-acts";
+
+    const spk = document.createElement("button");
+    spk.className = "fav-act";
+    spk.innerHTML = ICON_SPEAK;
+    spk.title = "播放發音";
+    spk.addEventListener("click", (e) => { e.stopPropagation(); speakJa(v.jp, spk); });
+
+    const del = document.createElement("button");
+    del.className = "fav-act remove";
+    del.innerHTML = ICON_TRASH;
+    del.title = "移除收藏";
+    del.addEventListener("click", (e) => { e.stopPropagation(); removeFav(key); });
+
+    acts.appendChild(spk);
+    acts.appendChild(del);
+    el.appendChild(main);
+    el.appendChild(acts);
+    wrap.appendChild(el);
+  });
+}
+
+/* ================= 收藏測驗（跨情境） ================= */
+let fqQueue = [], fqIdx = 0, fqScore = 0, fqAnswered = false;
+let fqDir = "jp2zh";
+let fqTimer = null;
+let fqRecorded = false;   // 本輪是否已記錄學習
+
+function shuffleArr(a) {
+  const r = a.slice();
+  for (let i = r.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [r[i], r[j]] = [r[j], r[i]];
+  }
+  return r;
+}
+
+function initFavQuiz() {
+  const words = favEntries("word").map(([, v]) => v).filter(v => v.jp && v.zh);
+  const empty = document.getElementById("fqEmpty");
+  const body = document.getElementById("fqBody");
+
+  if (words.length < 4) {
+    empty.textContent = words.length
+      ? `收藏的單字只有 ${words.length} 個，至少需要 4 個才能組成選擇題。`
+      : "尚未收藏任何單字。在情境頁的速查表或單字卡點擊星號即可加入。";
+    empty.style.display = "block";
+    body.style.display = "none";
+    return;
+  }
+
+  empty.style.display = "none";
+  body.style.display = "block";
+
+  fqQueue = shuffleArr(words);
+  fqIdx = 0; fqScore = 0; fqAnswered = false; fqRecorded = false;
+  if (fqTimer) { clearTimeout(fqTimer); fqTimer = null; }
+  document.getElementById("fqContent").style.display = "block";
+  document.getElementById("fqResult").style.display = "none";
+  renderFqQuestion();
+}
+
+function renderFqQuestion() {
+  const item = fqQueue[fqIdx];
+  if (!item) return;
+  fqAnswered = false;
+  if (fqTimer) { clearTimeout(fqTimer); fqTimer = null; }
+
+  const kanaEl = document.getElementById("fqKana");
+  if (fqDir === "jp2zh") {
+    document.getElementById("fqLabel").textContent = "這個單字的中文意思是？";
+    document.getElementById("fqJp").textContent = item.jp;
+    kanaEl.textContent = item.kana || "";
+    kanaEl.style.display = item.kana ? "" : "none";
+  } else {
+    document.getElementById("fqLabel").textContent = "這個中文對應的日文是？";
+    document.getElementById("fqJp").textContent = item.zh;
+    kanaEl.style.display = "none";
+  }
+  document.getElementById("fqSrc").textContent = titleOf(item.page) + (item.cat ? "・" + item.cat : "");
+
+  document.getElementById("fqFeedback").textContent = "";
+  document.getElementById("fqNext").disabled = true;
+  document.getElementById("fqProgress").textContent = `第 ${fqIdx + 1} 題 / 共 ${fqQueue.length} 題`;
+
+  const correct = fqDir === "jp2zh" ? item.zh : item.jp;
+  const pool = fqQueue.filter((_, i) => i !== fqIdx).map(x => fqDir === "jp2zh" ? x.zh : x.jp);
+  const uniq = [...new Set(pool)].filter(x => x !== correct);
+  const wrongs = shuffleArr(uniq).slice(0, 3);
+  const options = shuffleArr([correct, ...wrongs]);
+
+  const wrap = document.getElementById("fqOptions");
+  wrap.innerHTML = "";
+  options.forEach(opt => {
+    const b = document.createElement("button");
+    b.className = "fq-option";
+    b.textContent = opt;
+    b.addEventListener("click", () => handleFqAnswer(b, opt, correct, item));
+    wrap.appendChild(b);
+  });
+
+  document.getElementById("fqScore").textContent = `${fqScore} / ${fqIdx}`;
+}
+
+function handleFqAnswer(btn, chosen, correct, item) {
+  if (fqAnswered) return;
+  fqAnswered = true;
+
+  // 第一次作答即算今日學習
+  if (!fqRecorded) { fqRecorded = true; recordFavQuiz(); }
+
+  document.querySelectorAll(".fq-option").forEach(b => b.disabled = true);
+
+  if (chosen === correct) {
+    btn.classList.add("correct");
+    fqScore++;
+    document.getElementById("fqFeedback").textContent = "答對了";
+    fqTimer = setTimeout(() => { fqTimer = null; nextFq(); }, 600);
+  } else {
+    btn.classList.add("wrong");
+    document.querySelectorAll(".fq-option").forEach(b => {
+      if (b.textContent === correct) b.classList.add("correct");
+    });
+    document.getElementById("fqFeedback").textContent = `正確答案：${correct}`;
+  }
+
+  document.getElementById("fqScore").textContent = `${fqScore} / ${fqIdx + 1}`;
+  document.getElementById("fqNext").disabled = false;
+}
+
+function nextFq() {
+  fqIdx++;
+  if (fqIdx >= fqQueue.length) showFqResult();
+  else renderFqQuestion();
+}
+
+function showFqResult() {
+  document.getElementById("fqContent").style.display = "none";
+  document.getElementById("fqResult").style.display = "block";
+  const total = fqQueue.length;
+  document.getElementById("fqFinal").textContent = `${fqScore} / ${total}`;
+  const r = fqScore / total;
+  let msg = "繼續加油，多複習幾次吧";
+  if (r === 1) msg = "完美，收藏的單字已經記熟了";
+  else if (r >= 0.8) msg = "很不錯，幾乎全對";
+  else if (r >= 0.5) msg = "還可以，再複習一輪會更熟練";
+  document.getElementById("fqMsg").textContent = msg;
+}
+
+document.getElementById("fqNext").addEventListener("click", () => {
+  if (fqTimer) { clearTimeout(fqTimer); fqTimer = null; }
+  nextFq();
+});
+document.getElementById("fqRestart").addEventListener("click", initFavQuiz);
+document.getElementById("fqDirBtn").addEventListener("click", (e) => {
+  fqDir = fqDir === "jp2zh" ? "zh2jp" : "jp2zh";
+  e.target.textContent = fqDir === "jp2zh" ? "切換為「中→日」" : "切換為「日→中」";
+  initFavQuiz();
+});
+
+/* 收藏測驗也算今日學習（不歸屬任何單一情境） */
+function recordFavQuiz() {
+  const t = todayStr();
+  days[t] = (days[t] || 0) + 1;
+  saveLocal();
+  renderHeatmap();
+  renderStats();
+  pushCloud();
+}
+
+function renderAll() {
+  renderHeatmap();
+  renderStats();
+  renderRecent();
+  renderLeast();
+  renderFavBadge();
+  renderSyncStatus();
+  if (!document.getElementById("favModal").hidden) renderFavs();
+}
+
+/* ================= 同步碼 UI ================= */
+function renderSyncStatus() {
+  const el = document.getElementById("syncStatus");
+  if (!syncCode) {
+    el.innerHTML = '<span class="off">尚未設定同步碼，目前僅記錄在此裝置</span>';
+    return;
+  }
+  const state = cloudOk
+    ? '<span class="ok">已連線</span>'
+    : '<span class="off">未連線（僅本機）</span>';
+  el.innerHTML = `目前同步碼：<strong>${syncCode}</strong><br>${state}`;
+}
+
+document.getElementById("syncApply").addEventListener("click", async () => {
+  const v = document.getElementById("syncInput").value.trim();
+  if (v.length < 6) {
+    alert("同步碼需要至少 6 個字");
+    return;
+  }
+  syncCode = v;
+  localStorage.setItem(LS_CODE, syncCode);
+  document.getElementById("syncInput").value = "";
+  renderSyncStatus();
+  await pullCloud();
+  await pushCloud();
+});
+
+/* ================= 隨機學習 ================= */
+document.getElementById("randomBtn").addEventListener("click", () => {
+  const p = PAGES[Math.floor(Math.random() * PAGES.length)];
+  goTo(p.file);
+});
+
+/* ================= 點卡片記錄 ================= */
+document.querySelectorAll(".card").forEach(card => {
+  card.addEventListener("click", (e) => {
+    e.preventDefault();
+    const href = card.getAttribute("href");
+    goTo(href.replace("./", ""));
+  });
+});
+
+/* ================= 初始化 ================= */
+renderAll();
+pullCloud();
+</script>
+
+<script>
+/* ---------- 側欄 / 主題 / 版面 ---------- */
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const collapsed = sb.classList.toggle('collapsed');
+  localStorage.setItem('hub-sidebar', collapsed ? '0' : '1');
+}
+function toggleTheme() {
+  const dark = document.body.classList.toggle('dark');
+  document.getElementById('icon-moon').style.display = dark ? 'none' : '';
+  document.getElementById('icon-sun').style.display = dark ? '' : 'none';
+  localStorage.setItem('hub-dark', dark ? '1' : '0');
+}
+function toggleLayout() {
+  const grids = document.querySelectorAll('.grid');
+  const isList = !grids[0].classList.contains('list-mode');
+  grids.forEach(g => g.classList.toggle('list-mode', isList));
+  document.getElementById('icon-list').style.display = isList ? '' : 'none';
+  document.getElementById('icon-grid').style.display = isList ? 'none' : '';
+  localStorage.setItem('hub-layout', isList ? 'list' : 'grid');
+}
+if (localStorage.getItem('hub-dark') === '1') {
+  document.body.classList.add('dark');
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('icon-moon').style.display = 'none';
+    document.getElementById('icon-sun').style.display = '';
+  });
+}
+if (localStorage.getItem('hub-layout') === 'list') {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.grid').forEach(g => g.classList.add('list-mode'));
+    document.getElementById('icon-list').style.display = '';
+    document.getElementById('icon-grid').style.display = 'none';
+  });
+}
+if (localStorage.getItem('hub-sidebar') === '1') {
+  document.getElementById('sidebar').classList.remove('collapsed');
+}
+</script>
+</body>
+</html>
